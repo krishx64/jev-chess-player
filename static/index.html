@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess × Jev</title>
+<style>
+  :root { color-scheme:dark; --bg:#111310; --panel:#1b1e19; --panel2:#242821; --line:#343a30;
+          --text:#f2f1e9; --muted:#a5aa9c; --light:#e8d8bd; --dark:#82916b; --accent:#9dbb72;
+          --accent-dark:#657d46; --last:rgba(235,205,96,.55); }
+  * { box-sizing:border-box; }
+  body { min-width:320px; min-height:100vh; margin:0; background:var(--bg); color:var(--text);
+         font-family:Inter,Segoe UI,system-ui,Arial,sans-serif; }
+  button,select { font:inherit; }
+  header { min-height:62px; padding:12px clamp(14px,3vw,32px); border-bottom:1px solid var(--line);
+           display:flex; align-items:center; gap:14px; }
+  header h1 { font-size:20px; margin:0; white-space:nowrap; }
+  header h1 span { color:var(--accent); }
+  header .sub { color:var(--muted); font-size:13px; }
+  main { width:min(1160px,100%); margin:0 auto; padding:clamp(12px,2.5vw,28px);
+         display:grid; grid-template-columns:minmax(0, 660px) minmax(290px, 360px);
+         align-items:start; justify-content:center; gap:clamp(16px,3vw,30px); }
+  #boardWrap { min-width:0; width:100%; }
+  #board { display:grid; grid-template-columns:repeat(8,minmax(0,1fr));
+           grid-template-rows:repeat(8,minmax(0,1fr)); width:min(100%, min(72vh, 660px));
+           aspect-ratio:1; margin:0 auto; border:5px solid #292c25; border-radius:5px;
+           overflow:hidden; box-shadow:0 16px 42px #0007; user-select:none; touch-action:manipulation; }
+  .sq { position:relative; display:flex; min-width:0; min-height:0; align-items:center; justify-content:center;
+        aspect-ratio:1; padding:0; border:0; border-radius:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  button.sq:hover:not(:disabled) { border-color:transparent; }
+  .sq.light { background:var(--light); } .sq.dark { background:var(--dark); }
+  .sq:hover { filter:brightness(1.06); }
+  .sq .piece { position:relative; z-index:1; line-height:1; font-family:"Segoe UI Symbol","Noto Sans Symbols 2",serif;
+                font-size:clamp(25px, min(6.5vw, 7.2vh), 64px); }
+  .sq .pc-w { color:#fff; text-shadow:0 1px 2px #171913,0 0 4px #171913; }
+  .sq .pc-b { color:#1b1c18; text-shadow:0 1px 1px #f4eddd; }
+  .sq.sel { box-shadow:inset 0 0 0 4px var(--accent); }
+  .sq.last { background-image:linear-gradient(var(--last),var(--last)); }
+  .sq.check { background-image:radial-gradient(ellipse at center,#df4b40 0%,#c63029a8 55%,transparent 78%); }
+  .sq .dot { position:absolute; z-index:2; width:25%; height:25%; border-radius:50%; background:#17221370; pointer-events:none; }
+  .sq .cap { position:absolute; z-index:2; inset:5%; border:clamp(3px,.6vw,6px) solid #17221370; border-radius:50%; pointer-events:none; }
+  .coord { position:absolute; z-index:3; font-size:clamp(9px,1.2vw,12px); font-weight:700; opacity:.85; pointer-events:none; }
+  .coord.f { bottom:2px; right:4px; } .coord.r { top:2px; left:4px; }
+  .sq.light .coord { color:#596344; } .sq.dark .coord { color:#f0e3ca; }
+  .board-actions { display:flex; gap:8px; margin:14px auto 0; width:min(100%,660px); }
+  .board-actions button { flex:1; }
+  #panel { min-width:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  #panel h2 { margin:0 0 14px; font-size:17px; }
+  #panel h3 { margin:18px 0 8px; font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); }
+  .setup-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .field { display:grid; gap:5px; color:var(--muted); font-size:12px; }
+  select,button { background:var(--panel2); color:var(--text); border:1px solid #444b40; border-radius:7px;
+                  min-height:40px; padding:8px 11px; cursor:pointer; }
+  select { width:100%; }
+  button { transition:background .15s ease,border-color .15s ease,transform .15s ease; }
+  button:hover:not(:disabled) { background:#343a30; border-color:#74875d; }
+  button:active:not(:disabled) { transform:translateY(1px); }
+  button.primary { background:var(--accent-dark); border-color:var(--accent-dark); color:#fff; font-weight:700; }
+  button.primary:hover:not(:disabled) { background:#78934f; }
+  button:disabled,select:disabled { opacity:.55; cursor:not-allowed; }
+  #newBtn { grid-column:1/-1; }
+  #status { min-height:44px; display:flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid transparent;
+            border-radius:8px; padding:10px 12px; margin:14px 0; font-size:14px; }
+  #status.bad { border-color:#a9453d; } #status.good { border-color:var(--accent-dark); }
+  #jevBox { min-height:62px; background:var(--panel2); border-radius:8px; padding:11px 12px; font-size:13px; line-height:1.5; }
+  .confbar { height:6px; background:#40443a; border-radius:4px; overflow:hidden; margin-top:7px; }
+  .confbar > div { height:100%; background:var(--accent); }
+  #moves { max-height:240px; overflow:auto; scrollbar-color:#4d5546 transparent; background:#141612; border-radius:8px; padding:7px; font-size:14px; }
+  #moves table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+  #moves td { padding:5px 7px; border-radius:3px; } #moves tr:nth-child(odd) td { background:#ffffff08; }
+  #moves td:first-child { width:14%; color:var(--muted); } #moves td:nth-child(2),#moves td:nth-child(3) { width:43%; }
+  #fen { color:var(--muted); font-size:11px; line-height:1.45; overflow-wrap:anywhere; margin-top:12px; }
+  #toast { position:fixed; z-index:10; bottom:18px; left:50%; transform:translateX(-50%); background:#a83b34; color:white;
+           padding:11px 16px; border-radius:8px; display:none; max-width:min(90vw,600px); box-shadow:0 6px 24px #0008; }
+  #promo { position:fixed; z-index:9; inset:0; background:#0009; display:none; align-items:center; justify-content:center; }
+  #promo .card { background:var(--panel); border:1px solid var(--line); padding:18px; border-radius:12px; display:flex; gap:10px; box-shadow:0 12px 50px #0009; }
+  #promo button { font-size:clamp(32px,8vw,48px); min-width:62px; min-height:64px; }
+  .spinner { display:inline-block; flex:none; width:14px; height:14px; border:2px solid #888; border-top-color:#fff;
+             border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @media (max-width:850px) {
+    main { width:min(680px,100%); grid-template-columns:minmax(0,1fr); }
+    #board { width:min(100%, min(72vh, 660px)); }
+    #panel { width:min(100%,660px); margin:0 auto; }
+  }
+  @media (max-width:480px) {
+    header { align-items:flex-start; flex-direction:column; gap:3px; padding:10px 14px; }
+    header .sub { font-size:11px; }
+    main { padding:10px; gap:12px; }
+    #board { width:min(100%,88vw); border-width:3px; }
+    .board-actions { margin-top:9px; gap:6px; }
+    .board-actions button { padding:7px 5px; min-height:38px; font-size:12px; }
+    #panel { padding:14px; }
+    #panel h3 { margin-top:14px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>♞ Chess <span>× Jev</span></h1>
+  <div class="sub">pure Jev <b>Choice</b> over legal moves · rules in python-chess</div>
+</header>
+<main>
+  <div id="boardWrap">
+    <div id="board" role="group" aria-label="Chess board"></div>
+    <div class="board-actions">
+      <button id="flipBtn">Flip board</button>
+      <button id="undoBtn">Undo</button>
+      <button id="autoBtn">▶ Watch Jev vs Jev</button>
+    </div>
+  </div>
+  <div id="panel">
+    <h2>Game</h2>
+    <div class="setup-grid">
+      <label class="field">White<select id="whiteSel"><option value="human">Human</option><option value="jev">Jev</option></select></label>
+      <label class="field">Black<select id="blackSel"><option value="human">Human</option><option value="jev" selected>Jev</option></select></label>
+      <label class="field">Jev style<select id="styleSel"><option value="fun">Fun</option><option value="solid">Solid</option><option value="wild">Wild</option></select></label>
+      <button id="newBtn" class="primary">Start new game</button>
+    </div>
+    <div id="status">Loading…</div>
+    <h3>Jev · System One Choice</h3>
+    <div id="jevBox">No Jev move yet.</div>
+    <h3>Move history</h3>
+    <div id="moves"><table id="movesTable"></table></div>
+    <div id="fen"></div>
+  </div>
+</main>
+<div id="toast"></div>
+<div id="promo"><div class="card" id="promoCard"></div></div>
+
+<script src="/app.js" defer></script>
+</body>
+</html>

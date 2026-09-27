@@ -1,0 +1,5 @@
+typesafe-sdk>=0.7
+chess>=1.11
+fastapi>=0.109
+uvicorn>=0.27
+python-dotenv>=1.0
